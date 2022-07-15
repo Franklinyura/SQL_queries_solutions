@@ -2,7 +2,7 @@
 DROP TABLE IF EXISTS #temp_Employee
 
 -- VER LA ESTRUCTURA DE UNA TABLA
-EXEC SP_COLUMNS usuarios;
+EXEC SP_COLUMNS usuarios; -- Usuarios es el nombre de la tabla
 
 -- VER LAS TABLAS EXISTENTES CREADAS
 EXEC SP_TABLES @TABLE_OWNER = 'DBO';
