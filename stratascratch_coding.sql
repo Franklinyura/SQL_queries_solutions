@@ -1,121 +1,70 @@
--- GENERA LA FRECUENCIA (USO) DE COBERTURAS INDICANDO EL PSS
+/* Resolved Questions and Solutions
+
+Today, I am excited to present a glimpse into my expertise as a data analyst by sharing a selection of resolved data analysis questions I have recently tackled. 
+These examples are intended to showcase my problem-solving skills and demonstrate the breadth of my capabilities in the field of data analysis. */
+
+--- 1- Find the 3 most profitable companies in the entire world.
+
+SELECT * FROM forbes_global_2010_2014
+ORDER BY profits DESC
+LIMIT 3;
+
+/* 2- Find the highest target achieved by the employee or employees who works under the manager id 13. 
+Output the first name of the employee and target achieved. The solution should show the highest target achieved under manager_id=13 and which employee(s) achieved it.*/
+
 SELECT
-    DIM_COBERTURA.COD_COBERTURA,
-    DIM_COBERTURA.COD_TIPO_COBERTURA,
-    DIM_COBERTURA.DESC_COBERTURA,
-    HECHO_RECLAMACIONES.INTEGRALIDAD,
-    HECHO_RECLAMACIONES.FRECUENCIA,
-    FECHA_APERTURA,
-    DIM_PLANES.DESC_TIPO_PLAN,
-    DIM_RECLAMANTE.COD_RECLAMANTE,
-    DIM_RECLAMANTE.DESC_RECLAMANTE,
-    HECHO_RECLAMACIONES.MONTO_RECLAMADO,
-    HECHO_RECLAMACIONES.MONTO_PAGADO
-FROM DIM_COBERTURA
-    INNER JOIN HECHO_RECLAMACIONES
-        ON DIM_COBERTURA.ID_COBERTURA = HECHO_RECLAMACIONES.ID_COBERTURA
-    INNER JOIN DIM_RECLAMANTE 
-        ON HECHO_RECLAMACIONES.ID_RECLAMANTE = DIM_RECLAMANTE.ID_RECLAMANTE
-    INNER JOIN DIM_ESTATUS
-        ON HECHO_RECLAMACIONES.ID_ESTATUS = DIM_ESTATUS.ID_ESTATUS
-    INNER JOIN DIM_PLANES
-        ON HECHO_RECLAMACIONES.ID_PLAN = DIM_PLANES.ID_PLAN
-    INNER JOIN DIM_TIPO_RECLAMO
-        ON HECHO_RECLAMACIONES.ID_TIPO_RECLAMO = DIM_TIPO_RECLAMO.ID_TIPO_RECLAMO
-    WHERE HECHO_RECLAMACIONES.FECHA_APERTURA BETWEEN '1-1-2021' AND '12-31-2021'
-        -- AND DIM_COBERTURA.COD_AGRUPADOR_PRIMARIO NOT IN ('N1','34','48','-2','N2','-2','N3','41','49','42') AGRUPADORES DE MEDICAMENTOS, MATERIALES, ETC
-        AND DIM_TIPO_RECLAMO.COD_TIPO_RECLAMO != 'R'
-        AND DIM_ESTATUS.COD_ESTATUS NOT IN ('52','213')
-        AND HECHO_RECLAMACIONES.MONTO_PAGADO > 0
-        AND DIM_COBERTURA.COD_COBERTURA = '881401'
-        AND DIM_RECLAMANTE.COD_RECLAMANTE = '1689137';
+    first_name,
+    target
+FROM salesforce_employees
+WHERE manager_id = 13
+AND target = (SELECT MAX(target) FROM salesforce_employees WHERE manager_id = 13);
 
 
--- FRECUENCIA DE USO DE COBERTURAS EN RESUMEN
+/* 3- Find the total number of downloads for paying and non-paying users by date. Include only records where non-paying customers have more downloads than paying customers. 
+The output should be sorted by earliest date first and contain 3 columns date, non-paying downloads, paying downloads. */
+
 SELECT
-    DIM_COBERTURA.COD_COBERTURA,
-    SUM(HECHO_RECLAMACIONES.FRECUENCIA) AS 'TOTAL FRECUENCIA'
-FROM DIM_COBERTURA
-    INNER JOIN HECHO_RECLAMACIONES
-        ON DIM_COBERTURA.ID_COBERTURA = HECHO_RECLAMACIONES.ID_COBERTURA
-    INNER JOIN DIM_RECLAMANTE 
-        ON HECHO_RECLAMACIONES.ID_RECLAMANTE = DIM_RECLAMANTE.ID_RECLAMANTE
-    INNER JOIN DIM_ESTATUS
-        ON HECHO_RECLAMACIONES.ID_ESTATUS = DIM_ESTATUS.ID_ESTATUS
-    INNER JOIN DIM_PLANES
-        ON HECHO_RECLAMACIONES.ID_PLAN = DIM_PLANES.ID_PLAN
-    WHERE HECHO_RECLAMACIONES.FECHA_APERTURA BETWEEN '1-1-2021' AND '12-31-2021'
-        -- AND DIM_COBERTURA.COD_AGRUPADOR_PRIMARIO NOT IN ('N1','34','48','-2','N2','-2','N3','41','49','42') AGRUPADORES DE MEDICAMENTOS, MATERIALES, ETC
-        AND DIM_ESTATUS.COD_ESTATUS NOT IN ('52','213')
-        AND HECHO_RECLAMACIONES.MONTO_PAGADO > 0
-        AND DIM_COBERTURA.COD_COBERTURA IN ('997898', '997648')
-        AND DIM_RECLAMANTE.COD_RECLAMANTE = '1480'        
-GROUP BY 
-    DIM_COBERTURA.COD_COBERTURA
-ORDER BY [TOTAL FRECUENCIA] DESC;
+    date,
+    SUM(IF(paying_customer = 'no', downloads, 0)) AS non_payin,
+    SUM(IF(paying_customer = 'yes', downloads, 0)) AS paying
+FROM ms_user_dimension
+LEFT JOIN ms_acc_dimension
+    USING(acc_id)
+LEFT JOIN ms_download_facts
+    USING(user_id)
+GROUP BY date
+HAVING non_payin > paying
+ ORDER BY date ASC;
+ 
+ /* 4- Classify each business as either a restaurant, cafe, school, or other.
 
+•	A restaurant should have the word 'restaurant' in the business name.
+•	A cafe should have either 'cafe', 'café', or 'coffee' in the business name.
+•	A school should have the word 'school' in the business name.
+•	All other businesses should be classified as 'other'.
 
--- FRECUENCIA DE USO DE COBERTURAS PARA REEMBOLSO
-SELECT
-    DIM_COBERTURA.COD_COBERTURA,
-    DIM_COBERTURA.DESC_COBERTURA,
-    DIM_COBERTURA.DESC_AGRUPADOR_PRIMARIO,
-    HECHO_RECLAMACIONES.INTEGRALIDAD,
-    HECHO_RECLAMACIONES.FRECUENCIA,
-    FECHA_APERTURA,
-    ANIO,
-    MONTH(FECHA_APERTURA) AS 'MONTH',
-    DIM_PLANES.DESC_TIPO_PLAN,
-    DIM_RECLAMANTE.COD_RECLAMANTE,
-    DIM_RECLAMANTE.DESC_RECLAMANTE,
-    HECHO_RECLAMACIONES.MONTO_RECLAMADO,
-    HECHO_RECLAMACIONES.MONTO_PAGADO,
-    DIM_ESTATUS.DESC_ESTATUS
-FROM DIM_COBERTURA
-    INNER JOIN HECHO_RECLAMACIONES
-        ON DIM_COBERTURA.ID_COBERTURA = HECHO_RECLAMACIONES.ID_COBERTURA
-    INNER JOIN DIM_RECLAMANTE 
-        ON HECHO_RECLAMACIONES.ID_RECLAMANTE = DIM_RECLAMANTE.ID_RECLAMANTE
-    INNER JOIN DIM_ESTATUS
-        ON HECHO_RECLAMACIONES.ID_ESTATUS = DIM_ESTATUS.ID_ESTATUS
-    INNER JOIN DIM_PLANES
-        ON HECHO_RECLAMACIONES.ID_PLAN = DIM_PLANES.ID_PLAN
-    INNER JOIN DIM_TIPO_RECLAMO
-        ON DIM_TIPO_RECLAMO.ID_TIPO_RECLAMO = HECHO_RECLAMACIONES.ID_TIPO_RECLAMO
-    WHERE HECHO_RECLAMACIONES.FECHA_APERTURA >= '1-1-2020'
-        AND DIM_TIPO_RECLAMO.COD_TIPO_RECLAMO = 'R'
-        AND DIM_COBERTURA.COD_AGRUPADOR_PRIMARIO NOT IN ('N1','34','48','-2','N2','-2','N3','41','49','42')
-        AND DIM_ESTATUS.COD_ESTATUS NOT IN ('52','213')
-        AND HECHO_RECLAMACIONES.MONTO_PAGADO > 0;
+Output the business name and their classification. */
+ 
+ SELECT 
+    DISTINCT business_name,
+    CASE
+        WHEN business_name LIKE "%restaurant%" THEN "restaurant"
+        WHEN business_name LIKE  "%cafe%"
+            OR business_name LIKE "%café%"
+            OR business_name LIKE "%coffee%" 
+            THEN "cafe"
+        WHEN business_name LIKE "%school%" THEN "school"
+        ELSE "other"
+        END "classification"
+FROM sf_restaurant_health_violations;
 
+/* 5- Calculate the total revenue from each customer in March 2019. Include only customers who were active in March 2019.
+Output the revenue along with the customer id and sort the results based on the revenue in descending order. */
 
-
-
-
--- GENERA LA FRECUENCIA (USO) DE COBERTURAS INDICANDO EL PSS
-SELECT
-    DIM_COBERTURA.DESC_AGRUPADOR_PRIMARIO,
-    DIM_COBERTURA.COD_TIPO_COBERTURA,
-    DIM_COBERTURA.DESC_TIPO_COBERTURA,
-    SUM(HECHO_RECLAMACIONES.FRECUENCIA) [TOTAL FRECUENCIA],
-    SUM(HECHO_RECLAMACIONES.MONTO_PAGADO) [TOTAL MONTO PAGADO]
-FROM DIM_COBERTURA
-    INNER JOIN HECHO_RECLAMACIONES
-        ON DIM_COBERTURA.ID_COBERTURA = HECHO_RECLAMACIONES.ID_COBERTURA
-    INNER JOIN DIM_RECLAMANTE 
-        ON HECHO_RECLAMACIONES.ID_RECLAMANTE = DIM_RECLAMANTE.ID_RECLAMANTE
-    INNER JOIN DIM_ESTATUS
-        ON HECHO_RECLAMACIONES.ID_ESTATUS = DIM_ESTATUS.ID_ESTATUS
-    INNER JOIN DIM_PLANES
-        ON HECHO_RECLAMACIONES.ID_PLAN = DIM_PLANES.ID_PLAN
-    INNER JOIN DIM_TIPO_RECLAMO
-        ON DIM_TIPO_RECLAMO.ID_TIPO_RECLAMO = HECHO_RECLAMACIONES.ID_TIPO_RECLAMO
-    WHERE HECHO_RECLAMACIONES.FECHA_APERTURA BETWEEN '1-1-2019' AND '9-9-2022'
-        AND DIM_ESTATUS.COD_ESTATUS NOT IN ('52','213')
-        AND DIM_TIPO_RECLAMO.COD_TIPO_RECLAMO = 'N'
-        AND HECHO_RECLAMACIONES.MONTO_PAGADO > 0
-    GROUP BY
-        DIM_COBERTURA.DESC_AGRUPADOR_PRIMARIO,
-        DIM_COBERTURA.COD_TIPO_COBERTURA,
-        DIM_COBERTURA.DESC_TIPO_COBERTURA
-        ;
+SELECT 
+    cust_id,
+    SUM(total_order_cost) AS total_order_cost
+FROM orders
+WHERE year(order_date) = 2019 AND MONTH(order_date) = 3
+GROUP BY cust_id
+ORDER BY total_order_cost DESC;
