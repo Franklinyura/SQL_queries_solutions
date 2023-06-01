@@ -49,3 +49,31 @@ FROM
     ) AS u
 WHERE u.name IS NULL OR u.salary IS NULL
 ORDER BY u.Employee_id;
+
+
+/* 5- A single number is a number that appeared only once in the MyNumbers table. Write an SQL query to report the largest single number. 
+If there is no single number, report null. */
+
+SELECT
+    MAX(num) AS num
+FROM
+    (SELECT
+        num
+    FROM
+        MyNumbers
+    GROUP BY num
+    HAVING COUNT(num) = 1) AS t;
+    
+/* 6- Write an SQL query to report the names of all the salespersons who did not have any orders related to the company with the name "RED".
+
+Return the result table in any order. */ 
+ 
+SELECT name
+FROM SalesPerson
+WHERE sales_id NOT IN (
+  SELECT sales_id
+    FROM Orders
+      LEFT JOIN Company
+        USING(com_id)
+  WHERE name = "RED"
+);
